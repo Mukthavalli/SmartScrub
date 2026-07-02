@@ -1,0 +1,477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SmartScrub — Quality Report</title>
+  <meta name="description" content="AI-powered dataset quality report with scores, issue breakdown, and smart fix suggestions." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body class="report-body">
+
+<!-- Background orbs -->
+<div class="bg-orbs">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+  <div class="orb orb-4"></div>
+  <div class="orb orb-5"></div>
+</div>
+
+<!-- ── Report Navbar ──────────────────────────────────────────── -->
+<nav class="report-nav">
+  <div class="nav-left">
+    <a href="/" class="back-btn">← New Analysis</a>
+    <div class="tooltip-trigger" style="display: flex; align-items: center;">
+      <span class="report-title-nav" style="cursor: help;">⚡ Smart<span class="brand-ai">Scrub</span></span>
+      <div class="custom-tooltip" style="top: 130%; margin-left: 20px;">
+        <strong>SmartScrub</strong> is an AI-powered data quality checker.<br>
+        Automatically detects anomalies, cleans data, and exports<br>
+        the fixed dataset instantly!
+      </div>
+    </div>
+    <span class="file-badge" id="navFilename" style="margin-left: 10px;">—</span>
+  </div>
+  <div style="display:flex; gap:16px; align-items:center;">
+    <button class="theme-toggle" id="themeToggle" title="Toggle Theme">☀️</button>
+    <button class="btn-download" id="downloadBtn" disabled>
+      ⬇ Download Cleaned CSV
+    </button>
+  </div>
+</nav>
+
+<!-- ── Report Main ────────────────────────────────────────────── -->
+<main class="report-main" id="reportMain" style="display:none;">
+
+  <!-- No data fallback -->
+  <div id="noDataMsg" style="display:none; text-align:center; padding:80px 24px;">
+    <p style="font-size:1.2rem; color:var(--text-muted);">⚠️ No analysis data found. <a href="/" style="color:var(--cyan);">Upload a dataset first →</a></p>
+  </div>
+
+  <!-- ── Overall Score ──────────────────────────────────────────── -->
+  <div class="score-hero" id="scoreHero">
+    <div class="gauge-wrap">
+      <svg class="gauge-svg" width="180" height="180" viewBox="0 0 180 180">
+        <circle class="gauge-bg" cx="90" cy="90" r="76"/>
+        <circle class="gauge-fill" id="gaugeFill" cx="90" cy="90" r="76"
+          stroke-dasharray="477.5" stroke-dashoffset="477.5" stroke="url(#gaugeGrad)"/>
+        <defs>
+          <linearGradient id="gaugeGrad" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0%" stop-color="#7c3aed"/>
+            <stop offset="100%" stop-color="#06b6d4"/>
+          </linearGradient>
+        </defs>
+      </svg>
+      <div class="gauge-text">
+        <span class="gauge-score" id="gaugeScore">—</span>
+        <span class="gauge-label" id="gaugeLabel">Quality</span>
+      </div>
+    </div>
+
+    <div class="score-details">
+      <div class="score-headline" id="scoreHeadline">Analyzing…</div>
+      <div class="score-meta" id="scoreMeta"></div>
+      <div class="dimensions" id="dimensionsContainer"></div>
+    </div>
+  </div>
+
+  <!-- ── Stats Row ──────────────────────────────────────────────── -->
+  <div class="stats-row" id="statsRow"></div>
+
+  <!-- ── Charts Row ─────────────────────────────────────────────── -->
+  <div class="report-grid">
+    <div class="panel">
+      <div class="panel-title"><span class="pticon">🍩</span> Issue Type Breakdown</div>
+      <div class="chart-container"><canvas id="donutChart"></canvas></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title"><span class="pticon">📊</span> Issues per Column (Top 15)</div>
+      <div class="chart-container"><canvas id="barChart"></canvas></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title"><span class="pticon">🌡️</span> Missing Values Heatmap</div>
+      <div class="chart-container tall"><canvas id="heatmapChart"></canvas></div>
+    </div>
+    <div class="panel">
+      <div class="panel-title"><span class="pticon">📐</span> Dimension Scores Radar</div>
+      <div class="chart-container tall"><canvas id="radarChart"></canvas></div>
+    </div>
+  </div>
+
+  <!-- ── All Issues Table ───────────────────────────────────────── -->
+  <div class="panel full-width" style="margin-bottom:20px;">
+    <div class="panel-title"><span class="pticon">🔴</span> All Detected Issues <span id="issueCountBadge" style="margin-left:8px;font-size:.8rem;padding:3px 10px;border-radius:10px;background:rgba(239,68,68,.15);color:#fca5a5;font-weight:600;"></span></div>
+    <div style="overflow-x:auto;">
+      <table class="issues-table" id="issuesTable">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Column</th>
+            <th>Issue Type</th>
+            <th>Detail</th>
+            <th>Severity</th>
+          </tr>
+        </thead>
+        <tbody id="issuesTableBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ── AI Suggestions ─────────────────────────────────────────── -->
+  <div class="panel full-width" style="margin-bottom:20px;">
+    <div class="panel-title"><span class="pticon">🤖</span> AI-Powered Suggestions</div>
+    <div class="suggestions-list" id="suggestionsList"></div>
+  </div>
+
+  <!-- ── Column Overview ────────────────────────────────────────── -->
+  <div class="panel full-width" style="margin-bottom:20px;">
+    <div class="panel-title"><span class="pticon">🗂️</span> Column-Level Overview (<span id="colCount">0</span> columns)</div>
+    <div class="col-grid" id="colGrid"></div>
+  </div>
+
+  <!-- ── AI Explainer Agent ───────────────────────────────────────── -->
+  <div class="panel full-width" style="margin-bottom:20px;">
+    <div class="panel-title"><span class="pticon">🧑‍🔬</span> AI Data Analyst Explanation</div>
+    <div class="ai-agent-chat" id="aiAgentChat">
+      <div class="ai-agent-message">
+        <div class="ai-avatar">🤖</div>
+        <div class="ai-text">
+          <p style="margin-bottom:10px; font-weight: 500;">Hello! I'm your AI Data Analyst. I've thoroughly reviewed your dataset and generated a plan to fix the data quality issues before you download it. Here's a clear, point-by-point explanation of exactly what missing data or errors I found, and how I've overcome them:</p>
+          <ul class="fix-list" id="fixList"></ul>
+        </div>
+      </div>
+    </div>
+    <div style="margin-top:24px; display: flex; justify-content: center;">
+      <button class="btn-download" id="downloadBtn2" disabled>
+        ⬇ Download Cleaned Dataset (CSV)
+      </button>
+    </div>
+  </div>
+
+</main>
+
+<footer class="footer" style="position:relative;z-index:1;">
+  <p>Built with ❤️ using Python · Flask · Pandas · Chart.js · AI</p>
+</footer>
+
+<script>
+// ── Chart defaults ────────────────────────────────────────────────
+Chart.defaults.color = '#94a3b8';
+Chart.defaults.font.family = "'Inter', sans-serif";
+
+const PALETTE = [
+  '#7c3aed','#06b6d4','#10b981','#f59e0b','#ef4444',
+  '#ec4899','#8b5cf6','#14b8a6','#f97316','#6366f1'
+];
+
+// ── Load result from sessionStorage ──────────────────────────────
+const raw = sessionStorage.getItem('analysisResult');
+if (!raw) {
+  document.getElementById('noDataMsg').style.display = 'block';
+} else {
+  const d = JSON.parse(raw);
+  document.getElementById('reportMain').style.display = 'block';
+  initReport(d);
+}
+
+function initReport(d) {
+  const sessionId = d.session_id;
+
+  // Nav
+  document.getElementById('navFilename').textContent = d.filename;
+  document.title = `SmartScrub — ${d.filename}`;
+
+  // Download buttons
+  function setupDownload(btn) {
+    btn.disabled = false;
+    btn.addEventListener('click', () => {
+      btn.textContent = '⏳ Preparing…';
+      window.location.href = `/api/download-fixed/${sessionId}`;
+      setTimeout(() => { btn.innerHTML = '⬇ Download Cleaned CSV'; }, 2500);
+    });
+  }
+  setupDownload(document.getElementById('downloadBtn'));
+  setupDownload(document.getElementById('downloadBtn2'));
+
+  // ── Score gauge ──────────────────────────────────────────────────
+  const score = d.scores.overall;
+  const circumference = 477.5;
+  const fill = document.getElementById('gaugeFill');
+  document.getElementById('gaugeScore').textContent = score;
+  document.getElementById('gaugeLabel').textContent = d.scores.label;
+  document.getElementById('gaugeScore').style.color = d.scores.color;
+  setTimeout(() => {
+    fill.style.strokeDashoffset = circumference - (score / 100) * circumference;
+  }, 300);
+
+  // ── Score headline ───────────────────────────────────────────────
+  const fmt = d.format || 'Dataset';
+  document.getElementById('scoreHeadline').innerHTML =
+    `<span style="color:${d.scores.color}">${d.scores.label}</span> Data Quality`;
+  document.getElementById('scoreMeta').innerHTML = `
+    <div class="meta-item"><span class="meta-label">Format</span><span class="meta-value" style="color:var(--cyan)">${fmt}</span></div>
+    <div class="meta-item"><span class="meta-label">Rows</span><span class="meta-value">${d.shape.rows.toLocaleString()}</span></div>
+    <div class="meta-item"><span class="meta-label">Columns</span><span class="meta-value">${d.shape.cols}</span></div>
+    <div class="meta-item"><span class="meta-label">Total Issues</span><span class="meta-value" style="color:${d.analysis.total_issues>0?'#fca5a5':'#6ee7b7'}">${d.analysis.total_issues}</span></div>
+  `;
+
+  // ── Dimension bars ───────────────────────────────────────────────
+  const dims = d.scores.dimensions;
+  const dimColors = { Completeness:'#7c3aed', Uniqueness:'#06b6d4', Validity:'#10b981', Consistency:'#f59e0b', Accuracy:'#ec4899' };
+  const container = document.getElementById('dimensionsContainer');
+  Object.entries(dims).forEach(([name, val]) => {
+    const row = document.createElement('div');
+    row.className = 'dim-row';
+    const color = dimColors[name] || '#7c3aed';
+    row.innerHTML = `
+      <span class="dim-name">${name}</span>
+      <div class="dim-bar-wrap"><div class="dim-bar" style="background:${color};width:0%" data-width="${val}%"></div></div>
+      <span class="dim-score" style="color:${color}">${val}</span>
+    `;
+    container.appendChild(row);
+  });
+  setTimeout(() => {
+    document.querySelectorAll('.dim-bar').forEach(b => { b.style.width = b.dataset.width; });
+  }, 400);
+
+  // ── Stats row ────────────────────────────────────────────────────
+  const stats = [
+    { icon:'🚫', value: d.analysis.missing.count.toLocaleString(), label:'Missing Values', sub:`${d.analysis.missing.pct}% of cells`, color: d.analysis.missing.pct > 10 ? '#ef4444' : '#10b981' },
+    { icon:'🔁', value: d.analysis.duplicates.count.toLocaleString(), label:'Duplicate Rows', sub:`${d.analysis.duplicates.pct}% of rows`, color: d.analysis.duplicates.count > 0 ? '#f97316' : '#10b981' },
+    { icon:'📐', value: d.analysis.outliers.toLocaleString(), label:'Outliers Detected', sub:'IQR method', color: d.analysis.outliers > 0 ? '#f59e0b' : '#10b981' },
+    { icon:'⚠️', value: d.analysis.type_issues.toLocaleString(), label:'Type Mismatches', sub:'Mixed data types', color: d.analysis.type_issues > 0 ? '#ef4444' : '#10b981' },
+    { icon:'🔀', value: d.analysis.inconsistencies.toLocaleString(), label:'Inconsistencies', sub:'Format variations', color: d.analysis.inconsistencies > 0 ? '#f97316' : '#10b981' },
+    { icon:'🗑️', value: (d.analysis.empty_columns.length + d.analysis.constant_columns.length).toString(), label:'Empty/Const Cols', sub:'Zero-value columns', color: '#94a3b8' },
+  ];
+  const statsRow = document.getElementById('statsRow');
+  stats.forEach(s => {
+    statsRow.innerHTML += `
+      <div class="stat-card">
+        <div class="stat-icon">${s.icon}</div>
+        <div class="stat-value" style="color:${s.color}">${s.value}</div>
+        <div class="stat-label">${s.label}</div>
+        <div class="stat-sub">${s.sub}</div>
+      </div>`;
+  });
+
+  // ── Donut chart ──────────────────────────────────────────────────
+  const issueTypes = d.issue_types || {};
+  const itLabels = Object.keys(issueTypes);
+  const itValues = Object.values(issueTypes);
+  if (itLabels.length > 0) {
+    new Chart(document.getElementById('donutChart'), {
+      type: 'doughnut',
+      data: {
+        labels: itLabels,
+        datasets: [{ data: itValues, backgroundColor: PALETTE, borderWidth: 0, hoverOffset: 8 }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false,
+        cutout: '65%',
+        plugins: {
+          legend: { position: 'right', labels: { boxWidth: 12, padding: 14, font: { size: 11 } } },
+          tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${ctx.raw}` } }
+        }
+      }
+    });
+  } else {
+    document.getElementById('donutChart').parentElement.innerHTML = '<div class="no-issues">✅ No issues detected!</div>';
+  }
+
+  // ── Bar chart ─────────────────────────────────────────────────────
+  const ipc = d.issues_per_col || [];
+  if (ipc.length > 0) {
+    new Chart(document.getElementById('barChart'), {
+      type: 'bar',
+      data: {
+        labels: ipc.map(x => x.column.length > 14 ? x.column.slice(0,14)+'…' : x.column),
+        datasets: [{
+          label: 'Issues',
+          data: ipc.map(x => x.count),
+          backgroundColor: ipc.map((_, i) => PALETTE[i % PALETTE.length] + 'cc'),
+          borderColor: ipc.map((_, i) => PALETTE[i % PALETTE.length]),
+          borderWidth: 1, borderRadius: 6,
+        }]
+      },
+      options: {
+        responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+        plugins: { legend: { display: false } },
+        scales: {
+          x: { grid: { color: 'rgba(255,255,255,.04)' }, ticks: { font: { size: 11 } } },
+          y: { grid: { display: false }, ticks: { font: { size: 10 } } }
+        }
+      }
+    });
+  } else {
+    document.getElementById('barChart').parentElement.innerHTML = '<div class="no-issues">✅ No issues per column!</div>';
+  }
+
+  // ── Heatmap (missing %) ─────────────────────────────────────────
+  const heatmap = d.heatmap || [];
+  const hmLabels = heatmap.map(h => h.column.length > 14 ? h.column.slice(0,14)+'…' : h.column);
+  const hmValues = heatmap.map(h => h.missing_pct);
+  new Chart(document.getElementById('heatmapChart'), {
+    type: 'bar',
+    data: {
+      labels: hmLabels,
+      datasets: [{
+        label: 'Missing %',
+        data: hmValues,
+        backgroundColor: hmValues.map(v =>
+          v === 0 ? '#10b98133' :
+          v < 10  ? '#f59e0b99' :
+          v < 30  ? '#f9731699' : '#ef444499'
+        ),
+        borderColor: hmValues.map(v =>
+          v === 0 ? '#10b981' : v < 10 ? '#f59e0b' : v < 30 ? '#f97316' : '#ef4444'
+        ),
+        borderWidth: 1, borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: { callbacks: { label: ctx => ` Missing: ${ctx.raw}%` } }
+      },
+      scales: {
+        x: { grid: { display: false }, ticks: { font: { size: 9 }, maxRotation: 45 } },
+        y: { max: 100, grid: { color: 'rgba(255,255,255,.04)' }, ticks: { callback: v => v+'%', font: { size: 11 } } }
+      }
+    }
+  });
+
+  // ── Radar chart ──────────────────────────────────────────────────
+  new Chart(document.getElementById('radarChart'), {
+    type: 'radar',
+    data: {
+      labels: Object.keys(dims),
+      datasets: [{
+        label: 'Quality Score',
+        data: Object.values(dims),
+        backgroundColor: 'rgba(124,58,237,0.15)',
+        borderColor: '#7c3aed',
+        pointBackgroundColor: '#06b6d4',
+        pointBorderColor: '#fff',
+        pointRadius: 5,
+        borderWidth: 2,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: {
+        r: {
+          min: 0, max: 100,
+          grid: { color: 'rgba(255,255,255,.07)' },
+          angleLines: { color: 'rgba(255,255,255,.07)' },
+          pointLabels: { font: { size: 12 }, color: '#94a3b8' },
+          ticks: { display: false }
+        }
+      }
+    }
+  });
+
+  // ── Issues table ─────────────────────────────────────────────────
+  const allIssues = d.all_issues || [];
+  document.getElementById('issueCountBadge').textContent = allIssues.length;
+  const tbody = document.getElementById('issuesTableBody');
+  if (allIssues.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="5" class="no-issues">✅ No issues found — dataset is clean!</td></tr>';
+  } else {
+    allIssues.forEach((issue, i) => {
+      const sev = issue.severity || 'low';
+      tbody.innerHTML += `
+        <tr>
+          <td style="color:var(--text-dim)">${i+1}</td>
+          <td><span class="col-tag">${issue.column}</span></td>
+          <td>${issue.type}</td>
+          <td style="color:var(--text-muted);font-size:.82rem">${issue.detail}</td>
+          <td><span class="severity-badge sev-${sev}">${sev.charAt(0).toUpperCase()+sev.slice(1)}</span></td>
+        </tr>`;
+    });
+  }
+
+  // ── Suggestions ──────────────────────────────────────────────────
+  const suggestions = d.suggestions || [];
+  const sugList = document.getElementById('suggestionsList');
+  suggestions.forEach(s => {
+    sugList.innerHTML += `
+      <div class="suggestion-card">
+        <span class="sug-priority pri-${s.priority}">${s.priority}</span>
+        <div class="sug-content">
+          <div class="sug-category">${s.category}</div>
+          <div class="sug-text">${s.suggestion}</div>
+        </div>
+      </div>`;
+  });
+  if (suggestions.length === 0) {
+    sugList.innerHTML = '<div class="no-issues">🤖 No critical suggestions — data looks good!</div>';
+  }
+
+  // ── Column grid ──────────────────────────────────────────────────
+  const cols = d.columns || [];
+  document.getElementById('colCount').textContent = cols.length;
+  const colGrid = document.getElementById('colGrid');
+  cols.forEach(c => {
+    const hasIssues = c.issue_count > 0;
+    colGrid.innerHTML += `
+      <div class="col-card ${hasIssues ? 'has-issues' : 'clean'}">
+        <div class="col-name" title="${c.name}">${c.name}</div>
+        <span class="col-type-badge">${c.inferred_type}</span>
+        <div class="col-missing-bar">
+          <div class="col-missing-fill" style="width:${c.missing_pct}%"></div>
+        </div>
+        <div class="col-stats">
+          <span>Missing: ${c.missing_pct}%</span>
+          <span>${c.unique_count} unique</span>
+        </div>
+        ${hasIssues ? `<div style="margin-top:6px;font-size:.72rem;color:#fca5a5">⚠ ${c.issue_count} issue${c.issue_count>1?'s':''}</div>` : `<div style="margin-top:6px;font-size:.72rem;color:#6ee7b7">✅ Clean</div>`}
+      </div>`;
+  });
+
+  // ── Fix preview & AI Explanation ─────────────────────────────────
+  fetch(`/api/fixes-preview/${sessionId}`)
+    .then(r => r.json())
+    .then(data => {
+      const fixList = document.getElementById('fixList');
+      const fixes = data.fixes || [];
+      if (fixes.length === 0) {
+        fixList.innerHTML = '<div class="no-issues" style="text-align:left; padding:0;">✨ Everything looks perfect! No fixes were needed because your dataset is already clean. You are good to go!</div>';
+      } else {
+        fixes.forEach(f => {
+          fixList.innerHTML += `<li class="fix-item"><span class="fix-check">✓</span>${f}</li>`;
+        });
+      }
+    })
+    .catch(() => {
+      document.getElementById('fixList').innerHTML = '<div style="color:var(--text-dim);font-size:.85rem">Fix explanation unavailable.</div>';
+    });
+}
+
+  // Theme toggle
+  const themeToggle = document.getElementById('themeToggle');
+  const currentTheme = localStorage.getItem('theme') || 'dark';
+  if (currentTheme === 'light') {
+    document.documentElement.setAttribute('data-theme', 'light');
+    if(themeToggle) themeToggle.textContent = '🌙';
+  }
+  if (themeToggle) {
+    themeToggle.addEventListener('click', () => {
+      if (document.documentElement.getAttribute('data-theme') === 'light') {
+        document.documentElement.removeAttribute('data-theme');
+        localStorage.setItem('theme', 'dark');
+        themeToggle.textContent = '☀️';
+      } else {
+        document.documentElement.setAttribute('data-theme', 'light');
+        localStorage.setItem('theme', 'light');
+        themeToggle.textContent = '🌙';
+      }
+    });
+  }
+</script>
+</body>
+</html>

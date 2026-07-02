@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SmartScrub — Upload Your Dataset</title>
+  <meta name="description" content="Upload any dataset and get an instant AI-powered quality analysis with scores, visualizations, and smart fix suggestions." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+<!-- ── Animated background orbs ───────────────────────────────── -->
+<div class="bg-orbs">
+  <div class="orb orb-1"></div>
+  <div class="orb orb-2"></div>
+  <div class="orb orb-3"></div>
+  <div class="orb orb-4"></div>
+  <div class="orb orb-5"></div>
+</div>
+
+<!-- ── Navigation ─────────────────────────────────────────────── -->
+<nav class="navbar">
+  <div class="nav-brand tooltip-trigger">
+    <span class="brand-icon">⚡</span>
+    <span class="brand-name">Smart<span class="brand-ai">Scrub</span></span>
+    <div class="custom-tooltip">
+      <strong>SmartScrub</strong> is an AI-powered data quality checker.<br>
+      Upload any dataset to detect missing values, duplicates, and outliers.<br>
+      Get instant AI suggestions and one-click data cleaning!
+    </div>
+  </div>
+  <div class="nav-links">
+    <a href="#features">Features</a>
+    <a href="#formats">Formats</a>
+    <span class="nav-badge">Free &amp; Open Source</span>
+    <button class="theme-toggle" id="themeToggle" title="Toggle Theme">☀️</button>
+  </div>
+</nav>
+
+<!-- ── Hero ───────────────────────────────────────────────────── -->
+<section class="hero">
+  <div class="hero-content">
+    <div class="hero-badge">🤖 AI-Powered Quality Analysis</div>
+    <h1 class="hero-title">
+      Know Your Data.<br />
+      <span class="gradient-text">Fix It Instantly.</span>
+    </h1>
+    <p class="hero-sub">
+      Upload <strong>any dataset</strong> in any format — CSV, Excel, JSON, Parquet &amp; more.
+      Get an instant quality report with AI-powered suggestions and one-click auto-fix.
+    </p>
+
+    <!-- ── Upload Card ──────────────────────────────────────────── -->
+    <div class="upload-card" id="uploadCard">
+      <div class="upload-zone" id="dropZone">
+        <input type="file" id="fileInput" hidden />
+        <div class="upload-icon">
+          <svg width="56" height="56" viewBox="0 0 56 56" fill="none">
+            <circle cx="28" cy="28" r="28" fill="url(#uploadGrad)" opacity="0.15"/>
+            <path d="M28 36V22M28 22L22 28M28 22L34 28" stroke="url(#uploadGrad)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M18 38h20" stroke="url(#uploadGrad)" stroke-width="2.5" stroke-linecap="round"/>
+            <defs>
+              <linearGradient id="uploadGrad" x1="0" y1="0" x2="56" y2="56" gradientUnits="userSpaceOnUse">
+                <stop stop-color="#7c3aed"/>
+                <stop offset="1" stop-color="#06b6d4"/>
+              </linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <p class="drop-title">Drag &amp; Drop your dataset here</p>
+        <p class="drop-sub">or</p>
+        <button class="btn-browse" id="browseBtn" onclick="document.getElementById('fileInput').click()">
+          Browse File
+        </button>
+        <p class="drop-formats">CSV · TSV · Excel · JSON · Parquet · ODS · TXT</p>
+        <p class="drop-limit">Max file size: 50 MB</p>
+      </div>
+
+      <!-- File selected state -->
+      <div class="file-selected" id="fileSelected" style="display:none;">
+        <div class="file-info">
+          <div class="file-icon-wrap">📄</div>
+          <div class="file-details">
+            <span class="file-name" id="selectedFileName">—</span>
+            <span class="file-size" id="selectedFileSize">—</span>
+          </div>
+          <button class="btn-clear" id="clearBtn" title="Remove file">✕</button>
+        </div>
+        <button class="btn-analyze" id="analyzeBtn">
+          <span class="btn-label">🔍 Analyze Dataset</span>
+          <span class="btn-arrow">→</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Loading state -->
+    <div class="loading-card" id="loadingCard" style="display:none;">
+      <div class="loader-ring"></div>
+      <p class="loading-title">Analyzing your dataset…</p>
+      <div class="loading-steps" id="loadingSteps">
+        <div class="load-step active" id="ls1">📂 Loading dataset</div>
+        <div class="load-step" id="ls2">🔍 Detecting issues</div>
+        <div class="load-step" id="ls3">📊 Computing scores</div>
+        <div class="load-step" id="ls4">🤖 Generating suggestions</div>
+      </div>
+    </div>
+
+    <!-- Error state -->
+    <div class="error-card" id="errorCard" style="display:none;">
+      <span class="error-icon">⚠️</span>
+      <p class="error-msg" id="errorMsg">Something went wrong.</p>
+      <button class="btn-retry" onclick="resetUpload()">Try Again</button>
+    </div>
+  </div>
+</section>
+
+<!-- ── Features ───────────────────────────────────────────────── -->
+<section class="features" id="features">
+  <h2 class="section-title">What We Analyze</h2>
+  <div class="features-grid">
+    <div class="feat-card">
+      <div class="feat-icon">🔍</div>
+      <h3>Missing Values</h3>
+      <p>Detect null values per column with percentage breakdowns and visual heatmaps.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">🔁</div>
+      <h3>Duplicate Detection</h3>
+      <p>Find exact duplicate rows that inflate your dataset and skew analysis.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">📐</div>
+      <h3>Outlier Detection</h3>
+      <p>IQR-based outlier identification across all numeric columns automatically.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">⚠️</div>
+      <h3>Type Mismatches</h3>
+      <p>Catch columns with mixed data types before they break your pipelines.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">🔀</div>
+      <h3>Inconsistency Check</h3>
+      <p>Detect format variations like Male/male/M in the same column.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">🤖</div>
+      <h3>AI Suggestions</h3>
+      <p>Prioritized, actionable recommendations generated by AI for your specific dataset.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">🔧</div>
+      <h3>Auto-Fix &amp; Export</h3>
+      <p>One-click intelligent data cleaning. Download the fixed CSV instantly.</p>
+    </div>
+    <div class="feat-card">
+      <div class="feat-icon">📊</div>
+      <h3>Quality Score</h3>
+      <p>Weighted 0–100 score across 5 dimensions: Completeness, Uniqueness, Validity, Consistency, Accuracy.</p>
+    </div>
+  </div>
+</section>
+
+<!-- ── Supported Formats ───────────────────────────────────────── -->
+<section class="formats-section" id="formats">
+  <h2 class="section-title">Supported Formats</h2>
+  <div class="formats-grid">
+    <div class="format-pill">📄 CSV</div>
+    <div class="format-pill">📊 Excel (.xlsx)</div>
+    <div class="format-pill">📗 Excel (.xls)</div>
+    <div class="format-pill">📋 TSV</div>
+    <div class="format-pill">🔷 JSON</div>
+    <div class="format-pill">🗜️ Parquet</div>
+    <div class="format-pill">📑 ODS</div>
+    <div class="format-pill">📝 TXT (delimited)</div>
+  </div>
+  <p class="formats-note">Auto-detects delimiter, structure, and encoding — no manual configuration needed.</p>
+</section>
+
+<!-- ── Footer ──────────────────────────────────────────────────── -->
+<footer class="footer">
+  <p>Built with ❤️ using Python · Flask · AI · Pandas</p>
+</footer>
+
+<script>
+  const dropZone = document.getElementById('dropZone');
+  const fileInput = document.getElementById('fileInput');
+  const fileSelected = document.getElementById('fileSelected');
+  const loadingCard = document.getElementById('loadingCard');
+  const errorCard = document.getElementById('errorCard');
+  const analyzeBtn = document.getElementById('analyzeBtn');
+
+  let selectedFile = null;
+
+  // Drag & drop
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('drag-over'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('drag-over'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('drag-over');
+    const f = e.dataTransfer.files[0];
+    if (f) handleFile(f);
+  });
+
+  fileInput.addEventListener('change', () => {
+    if (fileInput.files[0]) handleFile(fileInput.files[0]);
+  });
+
+  document.getElementById('clearBtn').addEventListener('click', resetUpload);
+
+  function handleFile(file) {
+    selectedFile = file;
+    document.getElementById('selectedFileName').textContent = file.name;
+    document.getElementById('selectedFileSize').textContent = formatBytes(file.size);
+    dropZone.style.display = 'none';
+    fileSelected.style.display = 'block';
+  }
+
+  function resetUpload() {
+    selectedFile = null;
+    fileInput.value = '';
+    dropZone.style.display = 'flex';
+    fileSelected.style.display = 'none';
+    loadingCard.style.display = 'none';
+    errorCard.style.display = 'none';
+    document.getElementById('uploadCard').style.display = 'block';
+  }
+
+  analyzeBtn.addEventListener('click', async () => {
+    if (!selectedFile) return;
+    document.getElementById('uploadCard').style.display = 'none';
+    loadingCard.style.display = 'flex';
+
+    // Animate loading steps
+    const steps = ['ls1','ls2','ls3','ls4'];
+    let stepIdx = 0;
+    const stepInterval = setInterval(() => {
+      if (stepIdx < steps.length) {
+        document.getElementById(steps[stepIdx]).classList.add('active');
+        stepIdx++;
+      }
+    }, 700);
+
+    const formData = new FormData();
+    formData.append('file', selectedFile);
+
+    try {
+      const resp = await fetch('/api/analyze', { method: 'POST', body: formData });
+      clearInterval(stepInterval);
+      const data = await resp.json();
+      if (!resp.ok) throw new Error(data.error || 'Analysis failed');
+      sessionStorage.setItem('analysisResult', JSON.stringify(data));
+      window.location.href = '/report';
+    } catch (err) {
+      clearInterval(stepInterval);
+      loadingCard.style.display = 'none';
+      errorCard.style.display = 'flex';
+      document.getElementById('errorCard').style.display = 'flex';
+      document.getElementById('errorMsg').textContent = err.message;
+    }
+  });
+
+  function formatBytes(bytes) {
+    if (bytes < 1024) return bytes + ' B';
+    if (bytes < 1048576) return (bytes / 1024).toFixed(1) + ' KB';
+    return (bytes / 1048576).toFixed(1) + ' MB';
+  }
+
+  // Theme toggle
+  const themeToggle = document.getElementById('themeToggle');
+  const currentTheme = localStorage.getItem('theme') || 'dark';
+  if (currentTheme === 'light') {
+    document.documentElement.setAttribute('data-theme', 'light');
+    if(themeToggle) themeToggle.textContent = '🌙';
+  }
+  if (themeToggle) {
+    themeToggle.addEventListener('click', () => {
+      if (document.documentElement.getAttribute('data-theme') === 'light') {
+        document.documentElement.removeAttribute('data-theme');
+        localStorage.setItem('theme', 'dark');
+        themeToggle.textContent = '☀️';
+      } else {
+        document.documentElement.setAttribute('data-theme', 'light');
+        localStorage.setItem('theme', 'light');
+        themeToggle.textContent = '🌙';
+      }
+    });
+  }
+</script>
+</body>
+</html>

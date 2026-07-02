@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.env
+venv/
+env/
+.venv/
+
+# Uploads (user files - never commit)
+uploads/
+*.csv
+*.xlsx
+*.xls
+*.json
+*.parquet
+*.ods
+*.tsv
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
