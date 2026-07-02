@@ -59,6 +59,13 @@ The cleaning engine (`quality_engine/fixer.py`) standardizes the dataset without
 * **Standardization**: Trims all trailing/leading whitespaces and capitalizes inconsistent text formats.
 * **Dropping Redundancies**: Completely drops columns that are fully empty or constant (since they contain zero variance and add no value to ML algorithms).
 
+### 5. Interactive Data Visualizations (Dashboard Charts Explained)
+To provide instant visual analysis, the dashboard renders four interactive charts:
+* **Donut Chart (Issue Type Breakdown)**: Displays the proportion of each type of anomaly detected (e.g., missing values, outliers, duplicate rows). This helps users instantly identify the primary failure mode of their dataset.
+* **Horizontal Bar Chart (Issues per Column)**: Ranks columns by the number of issues they contain (showing the top 15). This tells developers exactly which columns are the "noisiest" and require the most attention.
+* **Missing Values Heatmap (Vertical Bar Chart)**: Plots the percentage of missing cells for every column. Bars are dynamically color-coded (Green for 0%, Yellow for <10%, Orange for <30%, Red for >30%) to highlight columns that violate completeness thresholds.
+* **Radar Chart (Dimension Scores Radar)**: Visualizes the 5 quality dimensions on a 0–100 scale radial grid. It gives an immediate geometric profile of the dataset's health (e.g., a perfect pentagon represents a flawless dataset).
+
 ---
 
 ## 💬 Project-Based Interview Questions & Answers
