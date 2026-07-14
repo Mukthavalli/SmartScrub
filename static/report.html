@@ -37,8 +37,8 @@
   </div>
   <div style="display:flex; gap:16px; align-items:center;">
     <button class="theme-toggle" id="themeToggle" title="Toggle Theme">☀️</button>
-    <button class="btn-download" id="downloadBtn" disabled>
-      ⬇ Download Cleaned CSV
+    <button class="btn-download" id="downloadBtn" onclick="document.getElementById('downloadSection').scrollIntoView({behavior: 'smooth'})">
+      ⬇ Download Options
     </button>
   </div>
 </nav>
@@ -144,10 +144,33 @@
         </div>
       </div>
     </div>
-    <div style="margin-top:24px; display: flex; justify-content: center;">
-      <button class="btn-download" id="downloadBtn2" disabled>
-        ⬇ Download Cleaned Dataset (CSV)
-      </button>
+    </div>
+    
+    <!-- Colorful Download Section -->
+    <div id="downloadSection" class="download-section">
+      <h3 style="text-align:center; margin-bottom:20px; color:var(--text); font-weight:600;">Choose Your Download Format</h3>
+      
+      <div class="download-grid">
+        <!-- Safe Mode -->
+        <div class="download-card safe-mode">
+          <div class="dl-icon">🛡️</div>
+          <h4>Safe Mode (Recommended)</h4>
+          <p>Best for human-readable reports (like Excel sheets). Leaves layout, empty spaces, and blank columns intact so your format isn't disturbed. Only fixes formatting, types, and invisible spaces.</p>
+          <button class="btn-download btn-dl-safe" id="btnDlSafe" disabled>
+            ⬇ Download (Safe)
+          </button>
+        </div>
+
+        <!-- Strict Mode -->
+        <div class="download-card strict-mode">
+          <div class="dl-icon">⚙️</div>
+          <h4>Strict Mode</h4>
+          <p>Best for Databases and Machine Learning. Forcefully deletes all empty spacer columns and rows, and fills any missing values to create a perfectly solid block of data.</p>
+          <button class="btn-download btn-dl-strict" id="btnDlStrict" disabled>
+            ⬇ Download (Strict)
+          </button>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -185,16 +208,23 @@ function initReport(d) {
   document.title = `SmartScrub — ${d.filename}`;
 
   // Download buttons
-  function setupDownload(btn) {
+  function setupDownload(btn, mode) {
+    if(!btn) return;
     btn.disabled = false;
     btn.addEventListener('click', () => {
+      const originalText = btn.textContent;
       btn.textContent = '⏳ Preparing…';
-      window.location.href = `/api/download-fixed/${sessionId}`;
-      setTimeout(() => { btn.innerHTML = '⬇ Download Cleaned CSV'; }, 2500);
+      window.location.href = `/api/download-fixed/${sessionId}?mode=${mode}`;
+      setTimeout(() => { btn.textContent = originalText; }, 2500);
     });
   }
-  setupDownload(document.getElementById('downloadBtn'));
-  setupDownload(document.getElementById('downloadBtn2'));
+  
+  // Enable the nav button right away (it just scrolls)
+  document.getElementById('downloadBtn').disabled = false;
+  
+  // Setup the two new mode buttons
+  setupDownload(document.getElementById('btnDlSafe'), 'safe');
+  setupDownload(document.getElementById('btnDlStrict'), 'strict');
 
   // ── Score gauge ──────────────────────────────────────────────────
   const score = d.scores.overall;

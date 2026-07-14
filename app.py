@@ -130,18 +130,47 @@ def download_fixed(session_id):
     if not sess:
         return jsonify({'error': 'Session not found or expired'}), 404
 
+    mode = request.args.get('mode', 'safe')
+
     df = sess['df']
     analysis = sess['analysis']
     original_name = os.path.splitext(sess['filename'])[0]
+    ext = sess.get('ext', '.csv').lower()
 
-    fixed_df, fixes = auto_fix(df, analysis)
+    fixed_df, fixes = auto_fix(df, analysis, mode=mode)
 
-    buf = io.StringIO()
-    fixed_df.to_csv(buf, index=False)
-    bytes_buf = io.BytesIO(buf.getvalue().encode('utf-8'))
+    buf = io.BytesIO()
 
-    download_name = f"{original_name}_cleaned.csv"
-    return send_file(bytes_buf, as_attachment=True, download_name=download_name, mimetype='text/csv')
+    if ext in ['.xlsx', '.xls', '.xlsm']:
+        fixed_df.to_excel(buf, index=False, engine='openpyxl')
+        download_name = f"{original_name}_cleaned{ext}"
+        mimetype = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+    elif ext == '.json':
+        # to_json returns a string, we need bytes
+        json_str = fixed_df.to_json(orient='records')
+        buf.write(json_str.encode('utf-8'))
+        download_name = f"{original_name}_cleaned.json"
+        mimetype = 'application/json'
+    elif ext == '.parquet':
+        fixed_df.to_parquet(buf, index=False)
+        download_name = f"{original_name}_cleaned.parquet"
+        mimetype = 'application/octet-stream'
+    elif ext == '.tsv':
+        str_buf = io.StringIO()
+        fixed_df.to_csv(str_buf, index=False, sep='\t')
+        buf.write(str_buf.getvalue().encode('utf-8'))
+        download_name = f"{original_name}_cleaned.tsv"
+        mimetype = 'text/tab-separated-values'
+    else:
+        # Default to CSV
+        str_buf = io.StringIO()
+        fixed_df.to_csv(str_buf, index=False)
+        buf.write(str_buf.getvalue().encode('utf-8'))
+        download_name = f"{original_name}_cleaned.csv"
+        mimetype = 'text/csv'
+
+    buf.seek(0)
+    return send_file(buf, as_attachment=True, download_name=download_name, mimetype=mimetype)
 
 
 @app.route('/api/fixes-preview/<session_id>', methods=['GET'])
@@ -149,7 +178,9 @@ def fixes_preview(session_id):
     sess = _sessions.get(session_id)
     if not sess:
         return jsonify({'error': 'Session not found'}), 404
-    _, fixes = auto_fix(sess['df'], sess['analysis'])
+        
+    mode = request.args.get('mode', 'safe')
+    _, fixes = auto_fix(sess['df'], sess['analysis'], mode=mode)
     return jsonify({'fixes': fixes})
 
 
