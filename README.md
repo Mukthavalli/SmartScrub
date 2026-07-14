@@ -52,12 +52,11 @@ The AI Advisor (`quality_engine/ai_advisor.py`) provides intelligent recommendat
 * **API Integration**: It makes an outbound HTTPS call to the Google Gemini API using the `gemini-1.5-flash` model. It sends a structured JSON summary of the dataset's anomalies and requests 5 highly actionable recommendations.
 * **Safety Fallback**: If no environment key (`GEMINI_API_KEY`) is provided, or if the API call fails/times out, the engine seamlessly switches to a rule-based advisor. This local advisor compiles actionable suggestions from the anomalies it detected.
 
-### 4. One-Click Auto-Fix
-The cleaning engine (`quality_engine/fixer.py`) standardizes the dataset without user programming:
-* **Numeric Imputation**: Fills missing values in numeric columns using the **median** value (which is more robust to outliers than the mean).
-* **Categorical Imputation**: Fills missing text values with the **mode** (most frequent value) or defaults to `"Unknown"`.
-* **Standardization**: Trims all trailing/leading whitespaces and capitalizes inconsistent text formats.
-* **Dropping Redundancies**: Completely drops columns that are fully empty or constant (since they contain zero variance and add no value to ML algorithms).
+### 4. Dual-Mode Auto-Fix Engine
+The cleaning engine (`quality_engine/fixer.py`) standardizes the dataset without user programming, offering two distinct download options:
+* **Safe Mode (Layout Preserving)**: Designed for unstructured financial reports and human-readable Excel files. It cleans text (trimming whitespaces, standardizing casing) and fixes data types, but strictly preserves visual spacing by ignoring empty rows/columns and leaving null strings blank.
+* **Strict Mode (Database Ready)**: Designed for Machine Learning and databases. It aggressively deletes empty spacer columns and duplicate blank rows, and imputes missing numeric values using the **median** and text values using the **mode**.
+* **Original Format Export**: The API dynamically detects the original file extension (e.g., `.xlsx`, `.json`, `.parquet`) and exports the cleaned dataset in its native format rather than defaulting to CSV, preventing structural degradation.
 
 ### 5. Interactive Data Visualizations (Dashboard Charts Explained)
 To provide instant visual analysis, the dashboard renders four interactive charts:
@@ -98,8 +97,8 @@ To provide instant visual analysis, the dashboard renders four interactive chart
 > **AI Data Quality Platform (SmartScrub)** | *Python, Flask, Pandas, Gemini API, Chart.js*
 > * Engineered a schema-agnostic data quality profiler that automatically parses and scores datasets (CSV, Excel, JSON, Parquet) across 5 core quality metrics.
 > * Integrated Google Gemini API to generate customized, prioritized data cleaning recommendations based on anomalous patterns detected in datasets.
+> * Built a dual-mode automated data-cleaning module capable of strict imputation for ML pipelines or safe, layout-preserving formatting for unstructured financial reports.
 > * Designed a multi-layered file ingestion system featuring auto-delimiter sniffing, Unicode encoding fallbacks, and explicit Excel engine routing to guarantee 100% upload success rates.
-> * Built an automated data-cleaning module implementing median/mode imputation, string standardization, and statistical outlier isolation using the IQR method.
 
 ### Option 2: Full-Stack & Engineering Focused (Strong for Software Engineering)
 > **SmartScrub — Full-Stack Data Quality Tool** | *Flask, JavaScript (ES6), HTML5/CSS3, Render*
@@ -112,5 +111,5 @@ To provide instant visual analysis, the dashboard renders four interactive chart
 > **Software Engineer / Analyst Project: SmartScrub**
 > * Developed a web application using Flask and Pandas to automate dataset validation, scoring, and cleaning.
 > * Utilized Google Gemini API to inspect metadata and return natural language suggestions for resolving data inconsistencies.
-> * Built an automated data cleaning script implementing median imputation, standardizing category casing, and removing outliers.
+> * Built a dual-mode data cleaning script offering aggressive imputation or safe layout-preservation for unstructured Excel files.
 > * Designed an interactive dashboard containing diagnostic charts (radar, heatmap, donut) to display quality scores visually.
